@@ -1,6 +1,6 @@
 ### 简介
 
-`LocalPass` 是一个运行在本地的密码管理工具，使用者只需记住 1 个密码（Master Password），就能生成其他网站所需的密码。
+`LocalPass` 是一个运行在本地的密码管理工具，使用者只需记住 1 个密码（Master Password），就能生成其他网站所需的密码。[演示视频](https://user-images.githubusercontent.com/35974/176926633-4326c348-dd02-4833-b438-8ea947cc639e.mp4)
 
 > **Warning**
 >
