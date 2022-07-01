@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>LocalPass</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  <link href="https://unpkg.com/tailwindcss@^2/dist/tailwind.min.css" rel="stylesheet" />
+</head>
+
+<body>
+  <div class="flex mx-auto my-10 w-1/3 justify-center">
+    <div x-data="data" x-init="fetchConfig" class="w-full">
+      <template x-if="!config['masterPassword']">
+        <div class="flex justify-center">
+          <input class="border-gray-500 p-1 border mr-2" type="password" x-model="masterPassword" />
+          <button class="border-gray-500 bg-gray-500 p-1 px-3 text-gray-100" x-on:click="addMasterPassword">Set Master
+            Password</button>
+        </div>
+      </template>
+      <template x-if="config['masterPassword']">
+        <div>
+          <template x-if="!verified">
+            <div class="flex justify-center">
+              <div>
+                <input class="border-gray-500 p-1 border mr-2" type="password" x-model="masterPassword"
+                  x-on:input.change="wrongPassword = false" />
+                <button class="border-gray-500 bg-gray-500 p-1 px-3 text-gray-100"
+                  x-on:click="verifyMasterPassword">Verify</button>
+                <p class="text-red-600" x-text="wrongPassword ? 'try again' : ''"></p>
+              </div>
+          </template>
+          <template x-if="verified">
+            <div>
+              <input type="text" class="border-gray-500 p-1 border mr-2 w-full" x-on:input.change="filterSites"
+                x-model="siteFilterKeyword" />
+              <table class="w-full border mt-4">
+                <template x-for="site in sites['sites']">
+                  <tr class="border">
+                    <td class="border p-1" x-text="site.site"></td>
+                    <td class="border p-1" x-text="site.password"></td>
+                  </tr>
+                </template>
+              </table>
+
+              <template x-if="sites['sites'] && sites['sites'].length === 0">
+                <div class="mt-2">
+                  <button class="border-gray-500 bg-gray-500 p-1 px-3 text-gray-100" x-on:click="addSite">Add</button>
+                </div>
+              </template>
+
+            </div>
+          </template>
+        </div>
+      </template>
+    </div>
+  </div>
+
+
+  <script>
+    document.addEventListener('alpine:init', () => {
+      Alpine.data('data', () => ({
+        config: {},
+        sites: {},
+        allSites: {},
+        verified: false,
+        wrongPassword: false,
+        masterPassword: '',
+        siteFilterKeyword: "",
+        async fetchConfig() {
+          const response = await fetch('/api/config')
+          this.config = await response.json();
+        },
+        async fetchSites() {
+          const response = await fetch('/api/sites?action=fetchAll&password=' + this.masterPassword)
+          this.sites = await response.json();
+          this.allSites = JSON.parse(JSON.stringify(this.sites));
+        },
+        async addSite() {
+          const response = await fetch('/api/sites?action=add&site=' + this.siteFilterKeyword)
+          const result = await response.json();
+          this.siteFilterKeyword = '';
+          this.fetchSites();
+        },
+        async addMasterPassword() {
+          const response = await fetch('/api/password?action=add&value=' + this.masterPassword)
+          const result = await response.json();
+          if (result.status === 'ok') {
+            this.fetchConfig();
+            this.fetchSites();
+            this.verified = true;
+          }
+        },
+        async verifyMasterPassword() {
+          const response = await fetch('/api/password?action=verify&value=' + this.masterPassword)
+          const result = await response.json();
+          if (result.status === 'ok') {
+            this.verified = true;
+            this.fetchSites()
+          } else {
+            this.wrongPassword = true;
+          }
+        },
+        filterSites() {
+          if (!this.siteFilterKeyword) {
+            this.sites = this.allSites;
+            return;
+          }
+
+          let result = []
+          for (const item of this.allSites.sites) {
+            if (item.site.indexOf(this.siteFilterKeyword) !== -1) {
+              result.push(item)
+            }
+          }
+          this.sites = { 'sites': result };
+        }
+      }))
+    })
+  </script>
+</body>
+
+</html>
